@@ -36,6 +36,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -56,7 +57,7 @@ public class GeoJsonParserTest {
   );
 
   @Test
-  public void getGuessSchema() {
+  public void getGuessSchema() throws Exception{
     var expected = GuessSchemaBuilder.create()
         .property(PrimitivePropertyBuilder
             .create(Datatypes.Float, "longitude")
@@ -82,7 +83,18 @@ public class GeoJsonParserTest {
 
     var result = parser.getGuessSchema(toEvent(event));
 
-    Assertions.assertEquals(expected, result);
+    assertEquals(expected.getEventSchema(), result.getEventSchema());
+    assertEquals(expected.getFieldStatusInfo(), result.getFieldStatusInfo());
+
+    ObjectMapper mapper = new ObjectMapper();
+
+    Map<String, Object> expectedMap =
+            mapper.readValue(expected.getEventPreview().get(0), Map.class);
+
+    Map<String, Object> actualMap =
+            mapper.readValue(result.getEventPreview().get(0), Map.class);
+
+    assertEquals(expectedMap, actualMap);
   }
 
   @Test
