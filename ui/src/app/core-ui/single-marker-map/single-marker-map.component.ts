@@ -16,7 +16,7 @@
  *
  */
 
-import { Component, forwardRef, Input, OnInit } from '@angular/core';
+import { Component, forwardRef, inject, Input, OnInit } from '@angular/core';
 import {
     icon,
     Layer,
@@ -25,7 +25,6 @@ import {
     MapOptions,
     marker,
     Marker,
-    tileLayer,
 } from 'leaflet';
 import {
     AssetLocation,
@@ -33,6 +32,7 @@ import {
     LocationConfig,
 } from '@streampipes/platform-services';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import { MapLayerProviderService } from '../services/map-layer-provider.service';
 
 @Component({
     selector: 'sp-single-marker-map',
@@ -47,6 +47,8 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
     standalone: false,
 })
 export class SingleMarkerMapComponent implements OnInit, ControlValueAccessor {
+    private mapLayerProviderService = inject(MapLayerProviderService);
+
     @Input()
     locationConfig: LocationConfig;
 
@@ -67,19 +69,17 @@ export class SingleMarkerMapComponent implements OnInit, ControlValueAccessor {
     ngOnInit() {
         this.assetLocation ??= {
             coordinates: {
-                latitude: 0,
-                longitude: 0,
+                latitude: 49.00689,
+                longitude: 8.40365,
             },
-            zoom: 1,
+            zoom: 8,
         };
         this.mapOptions = {
-            layers: [
-                tileLayer(this.locationConfig.tileServerUrl, {
-                    maxZoom: 18,
-                    attribution: this.locationConfig.attributionText,
-                }),
-            ],
+            layers: this.mapLayerProviderService.getMapLayers(
+                this.locationConfig,
+            ),
             zoom: this.assetLocation.zoom || 1,
+            zoomControl: !this.readonly,
             center: {
                 lat: this.assetLocation.coordinates.latitude,
                 lng: this.assetLocation.coordinates.longitude,
@@ -104,8 +104,10 @@ export class SingleMarkerMapComponent implements OnInit, ControlValueAccessor {
     onMapReady(map: Map) {
         this.map = map;
         this.map.attributionControl.setPrefix('');
-        this.map.invalidateSize();
         this.addMarker(this.assetLocation.coordinates);
+        setTimeout(() => {
+            this.map.invalidateSize();
+        }, 0);
     }
 
     onZoomChange(zoom: number): void {
